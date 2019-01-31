@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>BigchainDB</title>
+
+
+<!-- //socket io  -->
+<script src="/socket.io/socket.io.js"></script>
+        	<script src="http://smoothiecharts.org/smoothie.js"></script>
+
+
+        	CPU Usage: %<label id="cpu_list"></label>
+        	<br />
+        	<canvas id="chart" width="500" height="100"></canvas>
+
+<script type="text/javascript">
+
+        		 const socket = io('http://0.0.0.0:3000', {
+                         transports: ['polling']
+                         //transport: ['websocket']
+                         });
+
+                         socket.on('connect', () => {
+                         console.log('Socket connected id: ${socket.id}');
+                         });
+        		 var sequence = new TimeSeries();
+
+        		 socket.on('cpu_usage', function(msg){
+        			document.getElementById('cpu_list').innerHTML = msg;
+        			sequence.append(new Date().getTime(), msg);
+        		 });
+
+        		var chart = new SmoothieChart();
+        		chart.addTimeSeries(sequence);
+        		chart.streamTo(document.getElementById('chart'), 1000);
+
+</script>
+        <!-- Adjust version to your needs -->
+        <script src="https://unpkg.com/bigchaindb-driver@4.0.0/dist/browser/bigchaindb-driver.window.min.js"></script>
+  <script>
+
+function checkServer() {
+ var status;
+ var cpuStatus;
+ var cpuLimit = 60;
+
+  socket.on('cpu_usage', function(msg){
+    status = msg;
+    //alert(cpuStat);
+    cpuStatus = parseInt(status, 10);
+    console.log(cpuStatus);
+
+    if ( cpuStatus > cpuLimit ){
+      //if cpu is higher than limit, reload is needed
+      console.log("CPU usage is over limit: Reload for load balancing");
+      location.reload();
+    }
+    else if ( cpuStatus < cpuLimit ){
+      //if cpu is lower than limit, reload not needed
+      console.log("CPU is OK");
+    }
+
+  });
+}
+
+  async function readDataset(){
+
+        var col =["age", "sex", "bmi", "children", "smoker", "region", "charges"]; // excell
+        var formid =["age", "sex", "bmi", "children", "smoker", "region", "charge"]; //form
+
+        var myJSON = <%-JSON.stringify(dataset)%>;
+        var myArray = JSON.parse(myJSON);
+
+        var n ;
+        for (var i = 0; i < myArray.length; i++) {
+          for(var j = 0; j < 7; j++){
+            n = col[j];
+            document.getElementById(formid[j]).value = myArray[i][n];
+            //alert(myArray[i][n]);
+                }
+                await new Promise(done => setTimeout(done, 20000)); //Sleep 20 seconds
+
+                //submit bigchaindb
+            }
+}
+
+async function readSubmit(){
+
+  var col =["age", "sex", "bmi", "children", "smoker", "region", "charges"]; // excell
+  var formid =["age", "sex", "bmi", "children", "smoker", "region", "charge"]; //form
+
+  var myJSON = <%-JSON.stringify(dataset)%>;
+  var myArray = JSON.parse(myJSON);
+
+  var n ;
+  for (var i = 0; i < myArray.length; i++) {
+    for(var j = 0; j < 7; j++){
+      n = col[j];
+      document.getElementById(formid[j]).value = myArray[i][n];
+      //alert(myArray[i][n]);
+          }
+          await new Promise(done => setTimeout(done, 20000)); //Sleep 20 seconds
+          submitBigchaindb();
+      }
+}
+
+//----------------------------------------
+
+async function readCheckSubmit(){
+
+
+
+  var col =["age", "sex", "bmi", "children", "smoker", "region", "charges"]; // excell
+  var formid =["age", "sex", "bmi", "children", "smoker", "region", "charge"]; //form
+
+  var myJSON = <%-JSON.stringify(dataset)%>;
+  var myArray = JSON.parse(myJSON);
+
+  var n ;
+  for (var i = 0; i < myArray.length; i++) {
+    for(var j = 0; j < 7; j++){
+      n = col[j];
+      document.getElementById(formid[j]).value = myArray[i][n];
+      //alert(myArray[i][n]);
+          }
+          await new Promise(done => setTimeout(done, 20000)); //Sleep 20 seconds
+          checkServerSubmit();
+      }
+}
+
+ function checkServerSubmit() {
+ var cpuOkBool = false;
+ var tick = 0; // 50 seconds
+ var status;
+ var cpuStatus;
+ var cpuLimit = 25;
+
+  socket.on('cpu_usage', function(msg){
+    status = msg;
+    //alert(cpuStat);
+    cpuStatus = parseInt(status, 10);
+    console.log(cpuStatus);
+
+      if ( cpuStatus > cpuLimit ){
+        //if cpu is higher than limit, reload is needed
+        console.log("CPU usage is over limit: Wait for condition");
+        //location.reload();
+        cpuOkBool = false;
+
+        //await new Promise(done => setTimeout(done, 20000)); //Sleep 20 seconds
+        console.log("Already wait for:" + tick);
+        tick++;
+
+      }
+
+       if ( cpuStatus < cpuLimit ){
+        //if cpu is lower than limit, reload not needed
+        cpuOkBool = true;
+        console.log("CPU is OK");
+        console.log("Submit to blockchain database");
+        submitBigchaindb()
+
+        tick = 0;
+      }
+
+  });
+}
+
+//----------------------------------------------
+
+		function submitBigchaindb() {
+
+            // BigchainDB server instance (e.g. https://example.com/api/v1/)
+            const API_PATH = 'http://localhost:9984/api/v1/'
+
+            // Create a new keypair.
+            const alice = new BigchainDB.Ed25519Keypair()
+
+
+
+			var vaRage = document.getElementById('age').value;
+
+			var vaRsex = document.getElementById('sex').value;
+
+			var vaRbmi = document.getElementById('bmi').value;
+
+			var vaRchildren = document.getElementById('children').value;
+
+			var vaRsmoker = document.getElementById('smoker').value;
+
+			var vaRregion = document.getElementById('region').value;
+
+			var vaRcharge = document.getElementById('charge').value;
+
+            // Construct a transaction payload
+            const tx = BigchainDB.Transaction.makeCreateTransaction(
+                // Define the asset to store, in this example it is the current temperature
+                // (in Celsius) for the city of Berlin.
+                { age: vaRage.toString(),
+				  sex: vaRsex.toString(),
+				  bmi: vaRbmi.toString(),
+				  children: vaRchildren.toString(),
+				  smoker: vaRsmoker.toString(),
+				  region: vaRregion.toString(),
+				  charge: vaRcharge.toString()
+
+				//datetime: new Date().toString()
+
+
+				},
+
+                // Metadata contains information about the transaction itself
+                // (can be `null` if not needed)
+                { what: 'My first BigchainDB transaction' },
+
+                // A transaction needs an output
+                [ BigchainDB.Transaction.makeOutput(
+                        BigchainDB.Transaction.makeEd25519Condition(alice.publicKey))
+                ],
+                alice.publicKey
+            )
+
+            // Sign the transaction with private keys
+            const txSigned = BigchainDB.Transaction.signTransaction(tx, alice.privateKey)
+
+            // Send the transaction off to BigchainDB
+            let conn = new BigchainDB.Connection(API_PATH)
+
+            conn.postTransactionCommit(txSigned)
+                .then(res => {
+                    const elem = document.getElementById('lastTransaction')
+                    elem.href = API_PATH + 'transactions/' + txSigned.id
+                    elem.innerText = txSigned.id
+                    console.log('Transaction', txSigned.id, 'accepted')
+                })
+            // Check console for the transaction's status
+		}
+        </script>
+		<style>
+		table {
+			border-collapse: collapse;
+			width: 100%;
+		}
+
+		th, td {
+			text-align: left;
+			padding: 8px;
+		}
+
+		tr:nth-child(even){background-color: #f2f2f2}
+
+		th {
+			background-color: #4CAF50;
+			color: white;
+		}
+		</style>
+    </head>
+    <body id="home">
+
+<h2>BichainDB Javascript Driver GUI : Server 4</h2>
+
+<table>
+  <tr>
+    <th>Categories</th>
+    <th>Input</th>
+  </tr>
+  <tr>
+    <td>Age :</td>
+    <td><input type="text" id="age" name="age" value=""></td>
+  </tr>
+  <tr>
+    <td>Sex:</td>
+    <td><input type="text" id="sex" name="sex" value=""></td>
+
+  </tr>
+  <tr>
+    <td>Bmi</td>
+    <td><input type="text" id="bmi" name="bmi" value=""></td>
+
+  </tr>
+  <tr>
+    <td>Children:</td>
+    <td><input type="text" id="children" name="children" value=""></td>
+
+  </tr>
+  <tr>
+    <td>Smoker:</td>
+    <td><input type="text" id="smoker" name="smoker" value=""></td>
+
+  </tr>
+  <tr>
+    <td>Region:</td>
+    <td><input type="text" id="region" name="region" value=""></td>
+
+  </tr>
+  <tr>
+    <td>Charges:</td>
+    <td><input type="text" id="charge" name="charge" value=""></td>
+
+</tr>
+
+</table>
+<button onclick="readDataset()"> Extract Excel </button>
+<button onclick="submitBigchaindb()">Submit</button>
+<button onclick="checkServer()">Check Server</button>
+<button onclick="readSubmit()">Extract and Submit</button>
+<button onclick="readCheckSubmit()">Extract, Check and Submit</button>
+
+
+        <p> Your transaction id is: <a id="lastTransaction" target="_blank"><em>processing</em></a></p>
+
+<p>Dataset from assets/dataset.xlsx </p>
+<p><%= dataset %></p>
+
+
+    </body>
+</html>
